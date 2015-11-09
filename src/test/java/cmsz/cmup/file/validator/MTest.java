@@ -13,7 +13,7 @@ public class MTest {
 		
 		ValidatorImpl v = new ValidatorImpl();
 		
-		v.setRegxFile("reg.txt");
+		v.setTemplateFile("ValidCfg.xml");
 		
 		try {
 			v.prepare();

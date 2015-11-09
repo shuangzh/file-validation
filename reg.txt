@@ -1,0 +1,3 @@
+{"type":"sep","startWidth":"10","fixRowNum":0,"seperator":"\\|","fixLength":-1,fields:[{"name":"f1","regx":"^10$","begin":-10,"end":-10},{"name":"f2","regx":"^\\w{0,5}$","begin":-10,"end":-10},{"name":"f3","regx":"^[0-9]{11}$","begin":-10,"end":-10},{"name":"f4","regx":"^[0-9]{0,10}$","begin":-10,"end":-10},{"name":"f5","regx":"^20150930$","begin":-10,"end":-10}]}
+
+{"type":"sep","startWidth":"20","fixRowNum":-1,"seperator":"\\|","fixLength":-1,fields:[{"name":"f1","regx":"^20$","begin":-10,"end":-10},{"name":"f2","regx":"^\\w{0,5}$","begin":-10,"end":-10},{"name":"f3","regx":"^[0-9]{11}$","begin":-10,"end":-10},{"name":"f4","regx":"^[0-9]{0,10}$","begin":-10,"end":-10},{"name":"f5","regx":"^20150930$","begin":-10,"end":-10}]}

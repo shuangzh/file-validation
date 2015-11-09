@@ -1,0 +1,38 @@
+<template>
+	<filters>
+		<filter>
+			<type>sep</type>
+			<startWidth>10</startWidth>
+			<fixRowNum>0</fixRowNum>
+			<seperator>\\|</seperator>
+			<fixLength>-1</fixLength>
+			<fields>
+				<field>
+					<name>f1</name>
+					<regx>^10$</regx>
+
+				</field>
+				<field>
+					<name>f2</name>
+					<regx>^\\w{0,5}$</regx>
+
+				</field>
+				<field>
+					<name>f3</name>
+					<regx>^[0-9]{11}$</regx>
+
+				</field>
+				<field>
+					<name>f4</name>
+					<regx>^[0-9]{0,10}$</regx>
+
+				</field>
+				<field>
+					<name>f5</name>
+					<regx>^20150930$</regx>
+
+				</field>
+			</fields>
+		</filter>
+	</filters>
+</template>

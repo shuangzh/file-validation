@@ -5,12 +5,15 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+
+import com.thoughtworks.xstream.XStream;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -20,6 +23,9 @@ import cmsz.cmup.file.validator.FilterChain;
 import cmsz.cmup.file.validator.Section;
 import cmsz.cmup.file.validator.ValidateException;
 import cmsz.cmup.file.validator.Validator;
+import cmsz.cmup.file.validator.template.FieldCfg;
+import cmsz.cmup.file.validator.template.FilterCfg;
+import cmsz.cmup.file.validator.template.Template;
 
 public class ValidatorImpl implements Validator {
 	
@@ -55,21 +61,25 @@ public class ValidatorImpl implements Validator {
 	}
 
 	public void prepare() throws IOException {
-		InputStream in =new FileInputStream(regxFile);
-		BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-		String line = null;
 		
-		this.filterList = new ArrayList<Filter>();
-		while ((line = reader.readLine()) != null) {
-			if( StringUtils.isNotEmpty(line) && StringUtils.isNotBlank(line))
-			{
-				Filter f = this.createFilter(line);
-				this.filterList.add(f);
-			}
-		}
+		initFilters();
+		
+//		InputStream in =new FileInputStream(regxFile);
+//		BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+//		String line = null;
+//		
+//		
+//		
+//		this.filterList = new ArrayList<Filter>();
+//		while ((line = reader.readLine()) != null) {
+//			if( StringUtils.isNotEmpty(line) && StringUtils.isNotBlank(line))
+//			{
+//				Filter f = this.createFilter(line);
+//				this.filterList.add(f);
+//			}
+//		}
 		this.chain = new FilterChainImpl();
 		chain.setFilterlist(filterList);
-		
 		minusRowNumChecker= new MinusRowNumChecker();
 		
 	}
@@ -98,12 +108,30 @@ public class ValidatorImpl implements Validator {
 		}
 	}
 	
+	private void initFilters() throws IOException
+	{
+		XStream xs = new XStream();
+		xs.setMode(XStream.NO_REFERENCES);
+		xs.processAnnotations(new Class[]{Template.class,FilterCfg.class, FieldCfg.class});
+		InputStream in=this.getClass().getClassLoader().getResourceAsStream(regxFile);
+		Template template=(Template)xs.fromXML(in);
+		filterList = new ArrayList<Filter>();
+		for(FilterCfg fcfg: template.getFilters())
+		{
+			FilterImpl filter = new FilterImpl();
+			
+			
+		}
+		
+		
+		
+	}
+	
 	
 	private Filter createFilter(String jsonDefine)
 	{
 		// {"type":"sep","startWidth":"10","fixRowNum":2,"seperator":"\\|","fixLength":50,
 		//		"fieldMatcherClass":"default",fields:[{"name":"f1","regx":"xxddff","begin":0,"end":10}, {}]}
-		
 		JSONObject json=JSONObject.fromObject(jsonDefine);
 		FilterImpl filter=new FilterImpl();
 		
@@ -132,11 +160,11 @@ public class ValidatorImpl implements Validator {
 		return filter;
 	}
 
-	public String getRegxFile() {
+	public String getTemplateFile() {
 		return regxFile;
 	}
 
-	public void setRegxFile(String regxFile) {
+	public void setTemplateFile(String regxFile) {
 		this.regxFile = regxFile;
 	}
 	
