@@ -28,14 +28,24 @@ import cmsz.cmup.file.validator.template.FilterCfg;
 import cmsz.cmup.file.validator.template.Template;
 
 public class ValidatorImpl implements Validator {
-	
+
 	private String regxFile;
-	
 	private FilterChainImpl chain;
 	private List<Filter> filterList;
 	private MinusRowNumChecker minusRowNumChecker;
+	
+	
+	public String getTemplateFile() {
+		return regxFile;
+	}
+
+	public void setTemplateFile(String regxFile) {
+		this.regxFile = regxFile;
+	}
+	
 
 	public void validate(InputStream inputStrem) throws ValidateException, IOException {
+		initFilters();
 		BufferedReader reader = new BufferedReader(new InputStreamReader(inputStrem));
 		ValidateException ve = null;
 		String line = null;
@@ -46,43 +56,18 @@ public class ValidatorImpl implements Validator {
 				Section section = new LineSection(n, line);
 				chain.doFilter(section);
 				minusRowNumChecker.check(chain.getMatchedFilter(), section);
-
 			} catch (ValidateException e) {
 				if (ve == null) {
-					ve = new ValidateException(null, ValidateException.CODE_FAILED,  ValidateException.EMSG_FAILED);
+					ve = new ValidateException(null, ValidateException.CODE_FAILED, ValidateException.EMSG_FAILED);
 				}
 				ve.append(e);
 			}
 		}
-
 		if (ve != null) {
 			throw ve;
 		}
 	}
 
-	public void prepare() throws IOException {
-		
-		initFilters();
-		
-//		InputStream in =new FileInputStream(regxFile);
-//		BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-//		String line = null;
-//		
-//		
-//		
-//		this.filterList = new ArrayList<Filter>();
-//		while ((line = reader.readLine()) != null) {
-//			if( StringUtils.isNotEmpty(line) && StringUtils.isNotBlank(line))
-//			{
-//				Filter f = this.createFilter(line);
-//				this.filterList.add(f);
-//			}
-//		}
-		this.chain = new FilterChainImpl();
-		chain.setFilterlist(filterList);
-		minusRowNumChecker= new MinusRowNumChecker();
-		
-	}
 
 	protected class MinusRowNumChecker {
 		Map<Filter, Integer> filterRowMap = new HashMap<Filter, Integer>();
@@ -91,7 +76,8 @@ public class ValidatorImpl implements Validator {
 		public void check(Filter filter, Section section) throws ValidateException {
 			if (filter.getFixRowNum() < 0) {
 				if (filterRowMap.containsKey(filter)) {
-					throw new ValidateException(section, ValidateException.CODE_REPEATED, ValidateException.EMSG_REPEATED);
+					throw new ValidateException(section, ValidateException.CODE_REPEATED,
+							ValidateException.EMSG_REPEATED);
 				} else {
 					filterRowMap.put(filter, filter.getFixRowNum());
 					filterSectionMap.put(filter, section);
@@ -102,70 +88,77 @@ public class ValidatorImpl implements Validator {
 				Integer r = filterRowMap.get(f);
 				filterRowMap.put(f, ++r);
 				if (r == 1) {
-					throw new ValidateException(filterSectionMap.get(f), ValidateException.CODE_POSITION, ValidateException.EMSG_POSITION);
+					throw new ValidateException(filterSectionMap.get(f), ValidateException.CODE_POSITION,
+							ValidateException.EMSG_POSITION);
 				}
 			}
 		}
 	}
-	
-	private void initFilters() throws IOException
-	{
+
+	private void initFilters() throws IOException {
 		XStream xs = new XStream();
 		xs.setMode(XStream.NO_REFERENCES);
-		xs.processAnnotations(new Class[]{Template.class,FilterCfg.class, FieldCfg.class});
-		InputStream in=this.getClass().getClassLoader().getResourceAsStream(regxFile);
-		Template template=(Template)xs.fromXML(in);
+		xs.processAnnotations(new Class[] { Template.class, FilterCfg.class, FieldCfg.class });
+		InputStream in = this.getClass().getClassLoader().getResourceAsStream(regxFile);
+		Template template = (Template) xs.fromXML(in);
 		filterList = new ArrayList<Filter>();
-		for(FilterCfg fcfg: template.getFilters())
-		{
+		for (FilterCfg fcfg : template.getFilters()) {
 			FilterImpl filter = new FilterImpl();
-			
-			
+			filter.setType(fcfg.getType());
+			filter.setSeperator(fcfg.getSeperator());
+			filter.setStartWidth(fcfg.getStartWidth());
+			filter.setFixLength(fcfg.getFixLength());
+			filter.setFixRowNum(fcfg.getFixRowNum());
+			List<Field> list = new ArrayList<Field>();
+			for (FieldCfg cf : fcfg.getFields()) {
+				Field field = new Field();
+				field.setName(cf.getName());
+				field.setRegx(cf.getRegx());
+				field.setBegin(cf.getBegin());
+				field.setEnd(cf.getEnd());
+				list.add(field);
+			}
+			filter.setFieldList(list);
+			filter.setFieldMatcher(new DefaultFieldMatcherImpl());
+			filterList.add(filter);
 		}
-		
-		
-		
-	}
-	
-	
-	private Filter createFilter(String jsonDefine)
-	{
-		// {"type":"sep","startWidth":"10","fixRowNum":2,"seperator":"\\|","fixLength":50,
-		//		"fieldMatcherClass":"default",fields:[{"name":"f1","regx":"xxddff","begin":0,"end":10}, {}]}
-		JSONObject json=JSONObject.fromObject(jsonDefine);
-		FilterImpl filter=new FilterImpl();
-		
-		filter.setType(json.getString("type"));
-		filter.setStartWidth(json.getString("startWidth"));
-		filter.setSeperator(json.getString("seperator"));
-		filter.setFixRowNum(json.getInt("fixRowNum"));
-		filter.setFixLength(json.getInt("fixLength"));
-		
-		JSONArray jarray=JSONArray.fromObject(json.get("fields"));
-		List<Field> list=new ArrayList<Field>();
-		
-		for(int i=0; i< jarray.size(); i++){
-			Field f = new Field();
-			JSONObject j = jarray.getJSONObject(i);
-			f.setName(j.getString("name"));
-			f.setRegx(j.getString("regx"));
-			f.setBegin(j.getInt("begin"));
-			f.setEnd(j.getInt("end"));
-			list.add(f);
-		}
-		
-		filter.setFieldList(list);
-		
-		filter.setFieldMatcher(new DefaultFieldMatcherImpl());
-		return filter;
+		this.chain = new FilterChainImpl();
+		chain.setFilterlist(filterList);
+		minusRowNumChecker = new MinusRowNumChecker();
 	}
 
-	public String getTemplateFile() {
-		return regxFile;
-	}
 
-	public void setTemplateFile(String regxFile) {
-		this.regxFile = regxFile;
-	}
 	
+
+//	private Filter createFilter(String jsonDefine) {
+//		// {"type":"sep","startWidth":"10","fixRowNum":2,"seperator":"\\|","fixLength":50,
+//		// "fieldMatcherClass":"default",fields:[{"name":"f1","regx":"xxddff","begin":0,"end":10},
+//		// {}]}
+//		JSONObject json = JSONObject.fromObject(jsonDefine);
+//		FilterImpl filter = new FilterImpl();
+//
+//		filter.setType(json.getString("type"));
+//		filter.setStartWidth(json.getString("startWidth"));
+//		filter.setSeperator(json.getString("seperator"));
+//		filter.setFixRowNum(json.getInt("fixRowNum"));
+//		filter.setFixLength(json.getInt("fixLength"));
+//
+//		JSONArray jarray = JSONArray.fromObject(json.get("fields"));
+//		List<Field> list = new ArrayList<Field>();
+//
+//		for (int i = 0; i < jarray.size(); i++) {
+//			Field f = new Field();
+//			JSONObject j = jarray.getJSONObject(i);
+//			f.setName(j.getString("name"));
+//			f.setRegx(j.getString("regx"));
+//			f.setBegin(j.getInt("begin"));
+//			f.setEnd(j.getInt("end"));
+//			list.add(f);
+//		}
+//		filter.setFieldList(list);
+//		filter.setFieldMatcher(new DefaultFieldMatcherImpl());
+//		return filter;
+//	}
+
+
 }

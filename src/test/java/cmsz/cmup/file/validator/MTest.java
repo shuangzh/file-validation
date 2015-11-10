@@ -16,8 +16,7 @@ public class MTest {
 		v.setTemplateFile("ValidCfg.xml");
 		
 		try {
-			v.prepare();
-			v.validate(new FileInputStream("sample_1.txt"));
+			v.validate(new FileInputStream("sample_2.txt"));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -26,13 +25,10 @@ public class MTest {
 			for(ValidateException v2: l){
 				System.out.println(v2.toString());
 			}
-			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-
 	}
 
 }
